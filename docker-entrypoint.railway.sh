@@ -54,7 +54,7 @@ conversation_retention_days = 0
 auto_hydrate = true
 
 [autonomy]
-level = "supervised"
+level = "full"
 workspace_only = false
 allowed_commands = ["git","npm","cargo","ls","cat","grep","find","echo","pwd","wc","head","tail","date","curl","wget","rg","env","which","uname"]
 auto_approve = ["memory_recall","memory_store","file_read","file_write","file_edit","web_search_tool","web_fetch","calculator","glob_search","content_search","weather"]
@@ -124,8 +124,8 @@ else
   sed -i '/^\[memory\]/,/^\[/{s/^archive_after_days = .*/archive_after_days = 0/}' "$CONFIG_FILE" || true
   sed -i '/^\[memory\]/,/^\[/{s/^purge_after_days = .*/purge_after_days = 0/}' "$CONFIG_FILE" || true
 
-  # Fix invalid autonomy level values (e.g. "auto" is not a valid variant)
-  sed -i '/^\[autonomy\]/,/^\[/{s/^level = "auto"/level = "supervised"/}' "$CONFIG_FILE" || true
+  # Force autonomy level to full (fixes invalid values and upgrades supervised/readonly)
+  sed -i '/^\[autonomy\]/,/^\[/{s/^level = .*/level = "full"/}' "$CONFIG_FILE" || true
 
   # Patch autonomy auto_approve if missing
   grep -q "^auto_approve" "$CONFIG_FILE" || sed -i '/^\[autonomy\]/a auto_approve = ["memory_recall","memory_store","file_read","file_write","file_edit","web_search_tool","web_fetch","calculator","glob_search","content_search","weather"]' "$CONFIG_FILE" || true
