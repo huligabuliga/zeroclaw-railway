@@ -55,7 +55,7 @@ auto_hydrate = true
 
 [autonomy]
 level = "supervised"
-workspace_only = true
+workspace_only = false
 allowed_commands = ["git","npm","cargo","ls","cat","grep","find","echo","pwd","wc","head","tail","date","curl","wget","rg","env","which","uname"]
 auto_approve = ["memory_recall","memory_store","file_read","file_write","file_edit","web_search_tool","web_fetch","calculator","glob_search","content_search","weather"]
 
@@ -108,6 +108,9 @@ else
   # Ensure gateway is bound to 0.0.0.0 for Railway networking
   sed -i '/^\[gateway\]/,/^\[/{s/^host = .*/host = "0.0.0.0"/}' "$CONFIG_FILE" || true
   sed -i '/^\[gateway\]/,/^\[/{s/^allow_public_bind = .*/allow_public_bind = true/}' "$CONFIG_FILE" || true
+
+  # Allow zeroclaw to edit its own config (needed for self-configuration)
+  sed -i 's/^workspace_only = true/workspace_only = false/' "$CONFIG_FILE" || true
 
   # Patch memory settings for persistence (disable hygiene/purge)
   sed -i '/^\[memory\]/,/^\[/{s/^hygiene_enabled = .*/hygiene_enabled = false/}' "$CONFIG_FILE" || true
