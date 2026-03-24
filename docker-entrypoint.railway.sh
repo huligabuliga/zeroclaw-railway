@@ -47,6 +47,11 @@ message_timeout_secs = 300
 [memory]
 backend = "sqlite"
 auto_save = true
+hygiene_enabled = false
+archive_after_days = 0
+purge_after_days = 0
+conversation_retention_days = 0
+auto_hydrate = true
 
 [autonomy]
 level = "supervised"
@@ -103,6 +108,15 @@ else
   # Ensure gateway is bound to 0.0.0.0 for Railway networking
   sed -i '/^\[gateway\]/,/^\[/{s/^host = .*/host = "0.0.0.0"/}' "$CONFIG_FILE" || true
   sed -i '/^\[gateway\]/,/^\[/{s/^allow_public_bind = .*/allow_public_bind = true/}' "$CONFIG_FILE" || true
+
+  # Patch memory settings for persistence (disable hygiene/purge)
+  sed -i '/^\[memory\]/,/^\[/{s/^hygiene_enabled = .*/hygiene_enabled = false/}' "$CONFIG_FILE" || true
+  grep -q "^hygiene_enabled" "$CONFIG_FILE" || sed -i '/^\[memory\]/a hygiene_enabled = false' "$CONFIG_FILE" || true
+  sed -i '/^\[memory\]/,/^\[/{s/^archive_after_days = .*/archive_after_days = 0/}' "$CONFIG_FILE" || true
+  sed -i '/^\[memory\]/,/^\[/{s/^purge_after_days = .*/purge_after_days = 0/}' "$CONFIG_FILE" || true
+
+  # Patch autonomy auto_approve if missing
+  grep -q "^auto_approve" "$CONFIG_FILE" || sed -i '/^\[autonomy\]/a auto_approve = ["memory_recall","memory_store","file_read","file_write","file_edit","web_search_tool","web_fetch","calculator","glob_search","content_search","weather"]' "$CONFIG_FILE" || true
 fi
 
 # Always sync api_key from env vars into config (so zeroclaw doctor shows green)
