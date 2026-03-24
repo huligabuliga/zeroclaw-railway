@@ -23,7 +23,7 @@ RUN mkdir -p src benches \
     && echo "fn main() {}" > benches/agent_benchmarks.rs \
     && echo "pub fn placeholder() {}" > crates/robot-kit/src/lib.rs \
     && echo "pub fn placeholder() {}" > crates/aardvark-sys/src/lib.rs \
-    && printf '[package]\nname = "tauri-app"\nversion = "0.1.0"\nedition = "2021"\n' > apps/tauri/Cargo.toml \
+    && printf '[package]\nname = "zeroclaw-desktop"\nversion = "0.1.0"\nedition = "2021"\n' > apps/tauri/Cargo.toml \
     && echo "fn main() {}" > apps/tauri/src/main.rs
 RUN cargo build --profile release-fast --locked 2>/dev/null || cargo build --release --locked
 
