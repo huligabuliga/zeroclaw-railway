@@ -97,19 +97,23 @@ else
   # Ensure gateway is bound to 0.0.0.0 for Railway networking
   sed -i '/^\[gateway\]/,/^\[/{s/^host = .*/host = "0.0.0.0"/}' "$CONFIG_FILE" || true
   sed -i '/^\[gateway\]/,/^\[/{s/^allow_public_bind = .*/allow_public_bind = true/}' "$CONFIG_FILE" || true
+fi
 
-  # Inject Telegram config if env var is set but not yet in config
-  if [ -n "${TELEGRAM_BOT_TOKEN:-}" ] && ! grep -q "\[channels_config.telegram\]" "$CONFIG_FILE"; then
-    ALLOWED="${TELEGRAM_ALLOWED_USERS:-*}"
-    USERS_ARRAY=$(echo "$ALLOWED" | awk -F',' '{
-      result = ""
-      for (i=1; i<=NF; i++) {
-        gsub(/^[[:space:]]+|[[:space:]]+$/, "", $i)
-        result = result (i>1 ? ", " : "") "\"" $i "\""
-      }
-      print result
-    }')
-    cat >> "$CONFIG_FILE" << TOML
+# Always rewrite Telegram section from env vars (handles stale/missing config on volume)
+if [ -n "${TELEGRAM_BOT_TOKEN:-}" ]; then
+  ALLOWED="${TELEGRAM_ALLOWED_USERS:-*}"
+  USERS_ARRAY=$(echo "$ALLOWED" | awk -F',' '{
+    result = ""
+    for (i=1; i<=NF; i++) {
+      gsub(/^[[:space:]]+|[[:space:]]+$/, "", $i)
+      result = result (i>1 ? ", " : "") "\"" $i "\""
+    }
+    print result
+  }')
+  # Remove existing telegram section (if any) then re-add fresh
+  awk 'BEGIN{skip=0} /^\[channels_config\.telegram\]/{skip=1;next} skip && /^\[/{skip=0} !skip{print}' \
+    "$CONFIG_FILE" > /tmp/config_tmp && mv /tmp/config_tmp "$CONFIG_FILE"
+  cat >> "$CONFIG_FILE" << TOML
 
 [channels_config.telegram]
 bot_token = "${TELEGRAM_BOT_TOKEN}"
@@ -118,8 +122,7 @@ stream_mode = "off"
 interrupt_on_new_message = false
 mention_only = false
 TOML
-    echo "Telegram channel injected from env vars."
-  fi
+  echo "Telegram channel configured from env vars."
 fi
 
 # Fix ownership before dropping privileges

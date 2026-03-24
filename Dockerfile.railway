@@ -1,5 +1,13 @@
 # syntax=docker/dockerfile:1.7
 
+# ── Stage 0: Frontend build ───────────────────────────────────
+FROM node:22-alpine AS web-builder
+WORKDIR /web
+COPY web/package.json web/package-lock.json* ./
+RUN npm ci --ignore-scripts 2>/dev/null || npm install --ignore-scripts
+COPY web/ .
+RUN npm run build
+
 # ── Stage 1: Build ────────────────────────────────────────────
 FROM rust:1.94-slim AS builder
 
@@ -23,17 +31,7 @@ RUN mkdir -p apps/tauri/src \
     && printf '[package]\nname = "zeroclaw-desktop"\nversion = "0.1.0"\nedition = "2021"\n[[bin]]\nname = "zeroclaw-desktop"\npath = "src/main.rs"\n' > apps/tauri/Cargo.toml \
     && echo "fn main() {}" > apps/tauri/src/main.rs
 
-# Build web dashboard placeholder
-RUN mkdir -p web/dist && \
-    printf '%s\n' \
-      '<!doctype html>' \
-      '<html lang="en"><head>' \
-      '<meta charset="utf-8"/>' \
-      '<title>ZeroClaw Dashboard</title>' \
-      '</head><body>' \
-      '<h1>ZeroClaw Dashboard</h1>' \
-      '<p>Build the web UI to populate <code>web/dist</code>.</p>' \
-      '</body></html>' > web/dist/index.html
+COPY --from=web-builder /web/dist web/dist
 
 RUN cargo build --profile release-fast 2>/dev/null || cargo build --release && \
     cp target/release-fast/zeroclaw /app/zeroclaw 2>/dev/null || cp target/release/zeroclaw /app/zeroclaw && \
