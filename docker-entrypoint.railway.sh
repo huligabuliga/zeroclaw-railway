@@ -52,6 +52,7 @@ auto_save = true
 level = "supervised"
 workspace_only = true
 allowed_commands = ["git","npm","cargo","ls","cat","grep","find","echo","pwd","wc","head","tail","date"]
+auto_approve = ["memory_recall","memory_store","file_read","file_write","file_edit","web_search_tool","web_fetch","calculator","glob_search","content_search","weather"]
 
 [secrets]
 encrypt = true
