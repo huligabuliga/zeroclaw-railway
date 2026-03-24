@@ -56,7 +56,7 @@ auto_hydrate = true
 [autonomy]
 level = "supervised"
 workspace_only = true
-allowed_commands = ["git","npm","cargo","ls","cat","grep","find","echo","pwd","wc","head","tail","date"]
+allowed_commands = ["git","npm","cargo","ls","cat","grep","find","echo","pwd","wc","head","tail","date","curl","wget","rg","env","which","uname"]
 auto_approve = ["memory_recall","memory_store","file_read","file_write","file_edit","web_search_tool","web_fetch","calculator","glob_search","content_search","weather"]
 
 [secrets]
@@ -117,6 +117,8 @@ else
 
   # Patch autonomy auto_approve if missing
   grep -q "^auto_approve" "$CONFIG_FILE" || sed -i '/^\[autonomy\]/a auto_approve = ["memory_recall","memory_store","file_read","file_write","file_edit","web_search_tool","web_fetch","calculator","glob_search","content_search","weather"]' "$CONFIG_FILE" || true
+  # Patch allowed_commands to include curl/wget/git
+  sed -i 's|^allowed_commands = \[.*\]|allowed_commands = ["git","npm","cargo","ls","cat","grep","find","echo","pwd","wc","head","tail","date","curl","wget","rg","env","which","uname"]|' "$CONFIG_FILE" || true
 fi
 
 # Always sync api_key from env vars into config (so zeroclaw doctor shows green)

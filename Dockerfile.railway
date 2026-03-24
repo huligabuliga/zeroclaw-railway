@@ -43,6 +43,10 @@ FROM debian:trixie-slim AS release
 RUN apt-get update && apt-get install -y \
     ca-certificates \
     gosu \
+    git \
+    curl \
+    wget \
+    ripgrep \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/zeroclaw /usr/local/bin/zeroclaw
