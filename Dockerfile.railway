@@ -50,6 +50,7 @@ COPY docker-entrypoint.railway.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 ENV ZEROCLAW_WORKSPACE=/zeroclaw-data/workspace
+ENV HOME=/zeroclaw-data
 WORKDIR /zeroclaw-data
 
 EXPOSE 8080
