@@ -13,19 +13,27 @@ RUN apt-get update && apt-get install -y \
 # Cache dependencies
 COPY Cargo.toml Cargo.lock ./
 COPY crates/robot-kit/Cargo.toml crates/robot-kit/Cargo.toml
-RUN mkdir -p src benches crates/robot-kit/src \
+COPY crates/aardvark-sys/Cargo.toml crates/aardvark-sys/Cargo.toml
+COPY apps/tauri/Cargo.toml apps/tauri/Cargo.toml
+RUN mkdir -p src benches \
+      crates/robot-kit/src \
+      crates/aardvark-sys/src \
+      apps/tauri/src \
     && echo "fn main() {}" > src/main.rs \
     && echo "fn main() {}" > benches/agent_benchmarks.rs \
-    && echo "pub fn placeholder() {}" > crates/robot-kit/src/lib.rs
+    && echo "pub fn placeholder() {}" > crates/robot-kit/src/lib.rs \
+    && echo "pub fn placeholder() {}" > crates/aardvark-sys/src/lib.rs \
+    && echo "fn main() {}" > apps/tauri/src/main.rs
 RUN cargo build --profile release-fast --locked 2>/dev/null || cargo build --release --locked
 
 # Build real source
 COPY src/ src/
 COPY benches/ benches/
 COPY crates/ crates/
+COPY apps/ apps/
 COPY build.rs ./
 COPY tool_descriptions/ tool_descriptions/
-RUN rm -rf src/main.rs benches/agent_benchmarks.rs crates/robot-kit/src/lib.rs 2>/dev/null || true
+RUN rm -rf src/main.rs benches/agent_benchmarks.rs 2>/dev/null || true
 
 # Build web dashboard placeholder
 RUN mkdir -p web/dist && \
