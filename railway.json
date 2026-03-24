@@ -1,0 +1,46 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "dockerfilePath": "Dockerfile.railway"
+  },
+  "deploy": {
+    "startCommand": "zeroclaw daemon",
+    "healthcheckPath": "/health",
+    "healthcheckTimeout": 120,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 3,
+    "envVars": {
+      "ANTHROPIC_OAUTH_TOKEN": {
+        "description": "Anthropic OAuth token — run `claude setup-token` in Claude Code to generate one (valid 1 year)",
+        "required": false
+      },
+      "ANTHROPIC_API_KEY": {
+        "description": "Anthropic API key (sk-ant-api03-...) — alternative to OAuth token",
+        "required": false
+      },
+      "PROVIDER": {
+        "description": "LLM provider (anthropic, openrouter, openai, gemini, groq, mistral, deepseek, ollama)",
+        "required": false,
+        "default": "anthropic"
+      },
+      "ZEROCLAW_MODEL": {
+        "description": "Model ID (e.g. claude-sonnet-4-6, claude-opus-4-20250514, gpt-4o)",
+        "required": false,
+        "default": "claude-sonnet-4-6"
+      },
+      "ZEROCLAW_TEMPERATURE": {
+        "description": "Model temperature (0.0–2.0)",
+        "required": false,
+        "default": "0.7"
+      },
+      "TELEGRAM_BOT_TOKEN": {
+        "description": "Telegram bot token from @BotFather — enables Telegram channel",
+        "required": false
+      },
+      "TELEGRAM_ALLOWED_USERS": {
+        "description": "Comma-separated Telegram user IDs or usernames allowed to chat (e.g. 123456789,myusername). Use * to allow anyone.",
+        "required": false
+      }
+    }
+  }
+}

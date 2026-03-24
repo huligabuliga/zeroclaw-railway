@@ -1,0 +1,64 @@
+# syntax=docker/dockerfile:1.7
+
+# ── Stage 1: Build ────────────────────────────────────────────
+FROM rust:1.94-slim AS builder
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y \
+    pkg-config \
+    libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Cache dependencies
+COPY Cargo.toml Cargo.lock ./
+COPY crates/robot-kit/Cargo.toml crates/robot-kit/Cargo.toml
+RUN mkdir -p src benches crates/robot-kit/src \
+    && echo "fn main() {}" > src/main.rs \
+    && echo "fn main() {}" > benches/agent_benchmarks.rs \
+    && echo "pub fn placeholder() {}" > crates/robot-kit/src/lib.rs
+RUN cargo build --profile release-fast --locked 2>/dev/null || cargo build --release --locked
+
+# Build real source
+COPY src/ src/
+COPY benches/ benches/
+COPY crates/ crates/
+COPY build.rs ./
+COPY tool_descriptions/ tool_descriptions/
+RUN rm -rf src/main.rs benches/agent_benchmarks.rs crates/robot-kit/src/lib.rs 2>/dev/null || true
+
+# Build web dashboard placeholder
+RUN mkdir -p web/dist && \
+    printf '%s\n' \
+      '<!doctype html>' \
+      '<html lang="en"><head>' \
+      '<meta charset="utf-8"/>' \
+      '<title>ZeroClaw Dashboard</title>' \
+      '</head><body>' \
+      '<h1>ZeroClaw Dashboard</h1>' \
+      '<p>Build the web UI to populate <code>web/dist</code>.</p>' \
+      '</body></html>' > web/dist/index.html
+
+RUN cargo build --profile release-fast --locked 2>/dev/null || cargo build --release --locked && \
+    cp target/release-fast/zeroclaw /app/zeroclaw 2>/dev/null || cp target/release/zeroclaw /app/zeroclaw && \
+    strip /app/zeroclaw
+
+# ── Stage 2: Runtime ──────────────────────────────────────────
+FROM debian:bookworm-slim AS release
+
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    gosu \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /app/zeroclaw /usr/local/bin/zeroclaw
+COPY docker-entrypoint.railway.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+ENV ZEROCLAW_WORKSPACE=/zeroclaw-data/workspace
+WORKDIR /zeroclaw-data
+
+EXPOSE 8080
+
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+CMD ["zeroclaw", "daemon"]
