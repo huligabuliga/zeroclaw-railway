@@ -14,6 +14,8 @@ mkdir -p "$CONFIG_DIR" "$WORKSPACE_DIR"
 PROVIDER="${PROVIDER:-anthropic}"
 MODEL="${ZEROCLAW_MODEL:-claude-sonnet-4-6}"
 TEMPERATURE="${ZEROCLAW_TEMPERATURE:-0.7}"
+# Resolve API key: prefer explicit key, fall back to OAuth token
+API_KEY="${ANTHROPIC_API_KEY:-${ANTHROPIC_OAUTH_TOKEN:-}}"
 
 if [ ! -f "$CONFIG_FILE" ]; then
   echo "Generating initial config..."
@@ -22,6 +24,7 @@ if [ ! -f "$CONFIG_FILE" ]; then
 default_provider = "${PROVIDER}"
 default_model = "${MODEL}"
 default_temperature = ${TEMPERATURE}
+api_key = "${API_KEY}"
 model_routes = []
 embedding_routes = []
 
@@ -97,6 +100,15 @@ else
   # Ensure gateway is bound to 0.0.0.0 for Railway networking
   sed -i '/^\[gateway\]/,/^\[/{s/^host = .*/host = "0.0.0.0"/}' "$CONFIG_FILE" || true
   sed -i '/^\[gateway\]/,/^\[/{s/^allow_public_bind = .*/allow_public_bind = true/}' "$CONFIG_FILE" || true
+fi
+
+# Always sync api_key from env vars into config (so zeroclaw doctor shows green)
+if [ -n "${API_KEY:-}" ]; then
+  if grep -q "^api_key = " "$CONFIG_FILE"; then
+    sed -i "s|^api_key = .*|api_key = \"${API_KEY}\"|" "$CONFIG_FILE"
+  else
+    sed -i "1s|^|api_key = \"${API_KEY}\"\n|" "$CONFIG_FILE"
+  fi
 fi
 
 # Always rewrite Telegram section from env vars (handles stale/missing config on volume)
