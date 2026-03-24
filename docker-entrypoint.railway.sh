@@ -11,6 +11,8 @@ CONFIG_FILE="$CONFIG_DIR/config.toml"
 # Create directories
 mkdir -p "$CONFIG_DIR" "$WORKSPACE_DIR"
 
+echo "[entrypoint v6] CONFIG=$CONFIG_FILE TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:+SET} PROVIDER=${PROVIDER:-unset}"
+
 PROVIDER="${PROVIDER:-anthropic}"
 MODEL="${ZEROCLAW_MODEL:-claude-sonnet-4-6}"
 TEMPERATURE="${ZEROCLAW_TEMPERATURE:-0.7}"
@@ -139,6 +141,9 @@ fi
 
 # Fix ownership before dropping privileges
 chown -R "$ZEROCLAW_UID:$ZEROCLAW_GID" "$DATA_DIR"
+
+echo "[entrypoint v6] Final telegram section in config:"
+grep -A5 "\[channels_config.telegram\]" "$CONFIG_FILE" || echo "[entrypoint v6] NO telegram section found in config!"
 
 MODE="${ZEROCLAW_MODE:-daemon}"
 exec gosu "$ZEROCLAW_UID" zeroclaw "$MODE"
