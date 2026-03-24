@@ -12,28 +12,16 @@ RUN apt-get update && apt-get install -y \
 
 # Cache dependencies
 COPY Cargo.toml Cargo.lock ./
-COPY crates/robot-kit/Cargo.toml crates/robot-kit/Cargo.toml
-COPY crates/aardvark-sys/Cargo.toml crates/aardvark-sys/Cargo.toml
-# Stub out apps/tauri (excluded from build context via .dockerignore)
-RUN mkdir -p src benches \
-      crates/robot-kit/src \
-      crates/aardvark-sys/src \
-      apps/tauri/src \
-    && echo "fn main() {}" > src/main.rs \
-    && echo "fn main() {}" > benches/agent_benchmarks.rs \
-    && echo "pub fn placeholder() {}" > crates/robot-kit/src/lib.rs \
-    && echo "pub fn placeholder() {}" > crates/aardvark-sys/src/lib.rs \
-    && printf '[package]\nname = "zeroclaw-desktop"\nversion = "0.1.0"\nedition = "2021"\n' > apps/tauri/Cargo.toml \
-    && echo "fn main() {}" > apps/tauri/src/main.rs
-RUN cargo build --profile release-fast --locked 2>/dev/null || cargo build --release --locked
-
-# Build real source
 COPY src/ src/
 COPY benches/ benches/
 COPY crates/ crates/
 COPY build.rs ./
 COPY tool_descriptions/ tool_descriptions/
-RUN rm -rf src/main.rs benches/agent_benchmarks.rs 2>/dev/null || true
+# Stub apps/tauri (excluded from build context via .dockerignore)
+RUN mkdir -p apps/tauri/src \
+    && cp apps/tauri/Cargo.toml apps/tauri/Cargo.toml.bak 2>/dev/null || true \
+    && printf '[package]\nname = "zeroclaw-desktop"\nversion = "0.1.0"\nedition = "2021"\n[[bin]]\nname = "zeroclaw-desktop"\npath = "src/main.rs"\n' > apps/tauri/Cargo.toml \
+    && echo "fn main() {}" > apps/tauri/src/main.rs
 
 # Build web dashboard placeholder
 RUN mkdir -p web/dist && \
@@ -47,7 +35,7 @@ RUN mkdir -p web/dist && \
       '<p>Build the web UI to populate <code>web/dist</code>.</p>' \
       '</body></html>' > web/dist/index.html
 
-RUN cargo build --profile release-fast --locked 2>/dev/null || cargo build --release --locked && \
+RUN cargo build --profile release-fast 2>/dev/null || cargo build --release && \
     cp target/release-fast/zeroclaw /app/zeroclaw 2>/dev/null || cp target/release/zeroclaw /app/zeroclaw && \
     strip /app/zeroclaw
 
