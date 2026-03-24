@@ -11,7 +11,7 @@ CONFIG_FILE="$CONFIG_DIR/config.toml"
 # Create directories
 mkdir -p "$CONFIG_DIR" "$WORKSPACE_DIR"
 
-echo "[entrypoint v6] CONFIG=$CONFIG_FILE TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:+SET} PROVIDER=${PROVIDER:-unset}"
+echo "[entrypoint v7] CONFIG=$CONFIG_FILE TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:+SET} PROVIDER=${PROVIDER:-unset} BRAVE_API_KEY=${BRAVE_API_KEY:+SET}"
 
 PROVIDER="${PROVIDER:-anthropic}"
 MODEL="${ZEROCLAW_MODEL:-claude-sonnet-4-6}"
@@ -76,6 +76,12 @@ interval_minutes = 30
 
 [hooks]
 enabled = true
+
+[web_search]
+provider = "brave"
+
+[http_request]
+allowed_domains = ["*"]
 TOML
 
   # Append Telegram config if bot token is provided
@@ -118,10 +124,25 @@ else
   sed -i '/^\[memory\]/,/^\[/{s/^archive_after_days = .*/archive_after_days = 0/}' "$CONFIG_FILE" || true
   sed -i '/^\[memory\]/,/^\[/{s/^purge_after_days = .*/purge_after_days = 0/}' "$CONFIG_FILE" || true
 
+  # Fix invalid autonomy level values (e.g. "auto" is not a valid variant)
+  sed -i '/^\[autonomy\]/,/^\[/{s/^level = "auto"/level = "supervised"/}' "$CONFIG_FILE" || true
+
   # Patch autonomy auto_approve if missing
   grep -q "^auto_approve" "$CONFIG_FILE" || sed -i '/^\[autonomy\]/a auto_approve = ["memory_recall","memory_store","file_read","file_write","file_edit","web_search_tool","web_fetch","calculator","glob_search","content_search","weather"]' "$CONFIG_FILE" || true
   # Patch allowed_commands to include curl/wget/git
   sed -i 's|^allowed_commands = \[.*\]|allowed_commands = ["git","npm","cargo","ls","cat","grep","find","echo","pwd","wc","head","tail","date","curl","wget","rg","env","which","uname"]|' "$CONFIG_FILE" || true
+
+  # Ensure [web_search] section exists
+  if ! grep -q "^\[web_search\]" "$CONFIG_FILE"; then
+    printf '\n[web_search]\nprovider = "brave"\n' >> "$CONFIG_FILE"
+  fi
+
+  # Ensure [http_request] section allows all domains
+  if ! grep -q "^\[http_request\]" "$CONFIG_FILE"; then
+    printf '\n[http_request]\nallowed_domains = ["*"]\n' >> "$CONFIG_FILE"
+  else
+    sed -i '/^\[http_request\]/,/^\[/{s/^allowed_domains = .*/allowed_domains = ["*"]/}' "$CONFIG_FILE" || true
+  fi
 fi
 
 # Always sync api_key from env vars into config (so zeroclaw doctor shows green)
@@ -130,6 +151,15 @@ if [ -n "${API_KEY:-}" ]; then
     sed -i "s|^api_key = .*|api_key = \"${API_KEY}\"|" "$CONFIG_FILE"
   else
     sed -i "1s|^|api_key = \"${API_KEY}\"\n|" "$CONFIG_FILE"
+  fi
+fi
+
+# Always sync BRAVE_API_KEY into [web_search] section if env var is set
+if [ -n "${BRAVE_API_KEY:-}" ]; then
+  if grep -q "^brave_api_key = " "$CONFIG_FILE"; then
+    sed -i "s|^brave_api_key = .*|brave_api_key = \"${BRAVE_API_KEY}\"|" "$CONFIG_FILE"
+  else
+    sed -i "/^\[web_search\]/a brave_api_key = \"${BRAVE_API_KEY}\"" "$CONFIG_FILE" || true
   fi
 fi
 
@@ -162,8 +192,8 @@ fi
 # Fix ownership before dropping privileges
 chown -R "$ZEROCLAW_UID:$ZEROCLAW_GID" "$DATA_DIR"
 
-echo "[entrypoint v6] Final telegram section in config:"
-grep -A5 "\[channels_config.telegram\]" "$CONFIG_FILE" || echo "[entrypoint v6] NO telegram section found in config!"
+echo "[entrypoint v7] Final telegram section in config:"
+grep -A5 "\[channels_config.telegram\]" "$CONFIG_FILE" || echo "[entrypoint v7] NO telegram section found in config!"
 
 MODE="${ZEROCLAW_MODE:-daemon}"
 exec gosu "$ZEROCLAW_UID" zeroclaw "$MODE"
