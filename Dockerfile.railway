@@ -40,7 +40,7 @@ RUN cargo build --profile release-fast 2>/dev/null || cargo build --release && \
     strip /app/zeroclaw
 
 # ── Stage 2: Runtime ──────────────────────────────────────────
-FROM debian:bookworm-slim AS release
+FROM debian:trixie-slim AS release
 
 RUN apt-get update && apt-get install -y \
     ca-certificates \
