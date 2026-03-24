@@ -56,6 +56,7 @@ auto_hydrate = true
 [autonomy]
 level = "full"
 workspace_only = false
+max_actions_per_hour = 200
 allowed_commands = ["git","npm","cargo","ls","cat","grep","find","echo","pwd","wc","head","tail","date","curl","wget","rg","env","which","uname"]
 auto_approve = ["memory_recall","memory_store","file_read","file_write","file_edit","web_search_tool","web_fetch","calculator","glob_search","content_search","weather"]
 
@@ -126,6 +127,8 @@ else
 
   # Force autonomy level to full (fixes invalid values and upgrades supervised/readonly)
   sed -i '/^\[autonomy\]/,/^\[/{s/^level = .*/level = "full"/}' "$CONFIG_FILE" || true
+  # Raise action rate limit
+  sed -i 's/^max_actions_per_hour = .*/max_actions_per_hour = 200/' "$CONFIG_FILE" || true
 
   # Patch autonomy auto_approve if missing
   grep -q "^auto_approve" "$CONFIG_FILE" || sed -i '/^\[autonomy\]/a auto_approve = ["memory_recall","memory_store","file_read","file_write","file_edit","web_search_tool","web_fetch","calculator","glob_search","content_search","weather"]' "$CONFIG_FILE" || true
