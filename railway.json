@@ -4,7 +4,6 @@
     "dockerfilePath": "Dockerfile.railway"
   },
   "deploy": {
-    "startCommand": "zeroclaw daemon",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 120,
     "restartPolicyType": "ON_FAILURE",
@@ -40,6 +39,11 @@
       "TELEGRAM_ALLOWED_USERS": {
         "description": "Comma-separated Telegram user IDs or usernames allowed to chat (e.g. 123456789,myusername). Use * to allow anyone.",
         "required": false
+      },
+      "ZEROCLAW_MODE": {
+        "description": "Start mode: 'daemon' (gateway + Telegram + scheduler) or 'gateway' (HTTP API only)",
+        "required": false,
+        "default": "daemon"
       }
     }
   }

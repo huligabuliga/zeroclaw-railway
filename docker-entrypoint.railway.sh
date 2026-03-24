@@ -125,4 +125,5 @@ fi
 # Fix ownership before dropping privileges
 chown -R "$ZEROCLAW_UID:$ZEROCLAW_GID" "$DATA_DIR"
 
-exec gosu "$ZEROCLAW_UID" "$@"
+MODE="${ZEROCLAW_MODE:-daemon}"
+exec gosu "$ZEROCLAW_UID" zeroclaw "$MODE"
